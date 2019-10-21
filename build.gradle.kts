@@ -10,11 +10,21 @@ repositories {
     jcenter()
 }
 group = "com.github.lamba92"
-version = "0.0.1"
+version = "0.0.2-alpha"
 
 kotlin {
-    jvm()
-    js()
+    jvm {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    js {
+        browser()
+        nodejs()
+        useCommonJs()
+    }
     mingwX64()
     iosArm32()
     iosArm64()
