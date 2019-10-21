@@ -1,6 +1,4 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform") version "1.3.50"
@@ -40,7 +38,7 @@ kotlin {
             }
         }
 
-        val jvmAndNativeCommon = create("commonNative")
+        val jvmAndNativeCommon = create("jvmAndNativeCommonMain")
 
         val jvmMain by getting {
             dependsOn(jvmAndNativeCommon)
@@ -103,9 +101,6 @@ publishing {
         }
     }
 }
-
-val KotlinMultiplatformExtension.nativeTargets
-    get() = targets.filterIsInstance<KotlinNativeTarget>()
 
 @Suppress("unused")
 fun KotlinDependencyHandler.kotlinx(module: String, version: String? = null) =

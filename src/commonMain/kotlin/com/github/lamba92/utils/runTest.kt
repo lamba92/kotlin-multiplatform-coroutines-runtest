@@ -1,3 +1,5 @@
 package com.github.lamba92.utils
 
-expect fun <T> runTest(function: suspend () -> T)
+import kotlinx.coroutines.CoroutineScope
+
+expect fun <T> runTest(function: suspend CoroutineScope.() -> Unit)
