@@ -10,7 +10,7 @@ repositories {
     jcenter()
 }
 group = "com.github.lamba92"
-version = "0.0.1"
+version = "0.0.3-alpha"
 
 kotlin {
     jvm()
