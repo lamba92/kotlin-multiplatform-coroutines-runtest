@@ -1,0 +1,25 @@
+language: java
+jdk: openjdk11
+
+os: osx
+
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+    - $HOME/.gradle/
+    - $HOME/.konan
+
+script: ./gradlew check
+
+before_install:
+  - chmod +x gradlew
+
+deploy:
+  provider: script
+  script: ./gradlew publish
+  skip_cleanup: true
+  on:
+    branch: release
