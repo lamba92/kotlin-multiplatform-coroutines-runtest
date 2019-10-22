@@ -13,6 +13,7 @@ group = "com.github.lamba92"
 version = "0.0.3-alpha"
 
 kotlin {
+
     jvm {
         compilations.all {
             kotlinOptions {
@@ -20,11 +21,7 @@ kotlin {
             }
         }
     }
-    js {
-        browser()
-        nodejs()
-        useCommonJs()
-    }
+    js()
     mingwX64()
     iosArm32()
     iosArm64()
