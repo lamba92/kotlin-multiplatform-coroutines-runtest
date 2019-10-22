@@ -1,4 +1,10 @@
+import org.gradle.internal.os.OperatingSystem
+import Build_gradle.OS.*
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
+import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.konan.target.KonanTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform") version "1.3.50"
@@ -27,6 +33,9 @@ kotlin {
     iosArm64()
     macosX64()
     linuxX64()
+
+    publish(appleTargets + linuxTargets + platformIndependentTargets) onlyOn MAC
+    publish(windowsTargets) onlyOn WINDOWS
 
     sourceSets {
         val coroutinesVersion = "1.3.2"
@@ -116,3 +125,66 @@ fun KotlinDependencyHandler.kotlinx(module: String, version: String? = null) =
 @Suppress("unused")
 fun KotlinDependencyHandler.coroutines(module: String, version: String? = null) =
     kotlinx("coroutines-$module", version)
+
+@Suppress("unused")
+fun KotlinMultiplatformExtension.publish(targets: Iterable<KotlinTarget>) = targets
+
+infix fun Iterable<KotlinTarget>.onlyOn(os: OS) = configure(this) {
+    mavenPublication {
+        tasks.withType<AbstractPublishToMaven>().all {
+            onlyIf {
+                publication != this@mavenPublication || when (os) {
+                    LINUX -> OperatingSystem.current().isLinux
+                    MAC -> OperatingSystem.current().isMacOsX
+                    WINDOWS -> OperatingSystem.current().isWindows
+                }
+            }
+        }
+    }
+}
+
+enum class OS {
+    LINUX, MAC, WINDOWS
+}
+
+val KotlinMultiplatformExtension.nativeTargets
+    get() = targets.filterIsInstance<KotlinNativeTarget>()
+
+val KotlinMultiplatformExtension.platformIndependentTargets
+    get() = targets.filter { it !is KotlinNativeTarget || it.konanTarget == KonanTarget.WASM32 }
+
+val KotlinMultiplatformExtension.appleTargets
+    get() = targets.filter {
+        it is KotlinNativeTarget && listOf(
+            KonanTarget.IOS_ARM64,
+            KonanTarget.IOS_X64,
+            KonanTarget.MACOS_X64,
+            KonanTarget.IOS_ARM32
+        ).any { target -> it.konanTarget == target }
+    }
+
+val KotlinMultiplatformExtension.windowsTargets
+    get() = targets.filter {
+        it is KotlinNativeTarget && listOf(
+            KonanTarget.MINGW_X64,
+            KonanTarget.MINGW_X86
+        ).any { target -> it.konanTarget == target }
+    }
+
+val KotlinMultiplatformExtension.linuxTargets
+    get() = targets.filter {
+        it is KotlinNativeTarget && listOf(
+            KonanTarget.LINUX_ARM32_HFP,
+            KonanTarget.LINUX_MIPS32,
+            KonanTarget.LINUX_MIPSEL32,
+            KonanTarget.LINUX_X64
+        ).any { target -> it.konanTarget == target }
+    }
+
+val KotlinMultiplatformExtension.androidTargets
+    get() = targets.filter {
+        it is KotlinNativeTarget && listOf(
+            KonanTarget.ANDROID_ARM32,
+            KonanTarget.ANDROID_ARM64
+        ).any { target -> it.konanTarget == target }
+    }
