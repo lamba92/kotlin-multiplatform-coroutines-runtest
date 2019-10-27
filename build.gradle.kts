@@ -136,20 +136,6 @@ fun KotlinMultiplatformExtension.publish(vararg targets: Iterable<KotlinTarget>)
 fun KotlinMultiplatformExtension.publish(vararg metadata: KotlinCommonCompilation) =
     metadata.toList()
 
-infix fun Iterable<KotlinOnlyTarget<KotlinCommonCompilation>>.onlyOn(os: OS) = configure(this) {
-    mavenPublication {
-        tasks.withType<AbstractPublishToMaven>().all {
-            onlyIf {
-                publication != this@mavenPublication || when (os) {
-                    LINUX -> OperatingSystem.current().isLinux
-                    MAC -> OperatingSystem.current().isMacOsX
-                    WINDOWS -> OperatingSystem.current().isWindows
-                }
-            }
-        }
-    }
-}
-
 infix fun Iterable<KotlinTarget>.onlyOn(os: OS) = configure(this) {
     mavenPublication {
         tasks.withType<AbstractPublishToMaven>().all {
