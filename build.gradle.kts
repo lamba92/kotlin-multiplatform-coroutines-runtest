@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinCommonCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
 plugins {
@@ -34,11 +35,6 @@ kotlin {
     iosArm64()
     macosX64()
     linuxX64()
-    metadata {
-        mavenPublication {
-
-        }
-    }
 
     sourceSets {
         val coroutinesVersion = "1.3.2"
@@ -140,7 +136,7 @@ fun KotlinMultiplatformExtension.publish(vararg targets: Iterable<KotlinTarget>)
 fun KotlinMultiplatformExtension.publish(vararg metadata: KotlinCommonCompilation) =
     metadata.toList()
 
-infix fun Iterable<KotlinCommonCompilation>.onlyOn(os: OS) = configure(this) {
+infix fun Iterable<KotlinOnlyTarget<KotlinCommonCompilation>>.onlyOn(os: OS) = configure(this) {
     mavenPublication {
         tasks.withType<AbstractPublishToMaven>().all {
             onlyIf {
