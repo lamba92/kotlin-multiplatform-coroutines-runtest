@@ -3,6 +3,7 @@ import Build_gradle.OS.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinCommonCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
@@ -16,7 +17,7 @@ repositories {
     jcenter()
 }
 group = "com.github.lamba92"
-version = "0.0.3-alpha"
+version = "0.0.4-alpha"
 
 kotlin {
 
@@ -33,9 +34,11 @@ kotlin {
     iosArm64()
     macosX64()
     linuxX64()
+    metadata {
+        mavenPublication {
 
-    publish(appleTargets + linuxTargets + platformIndependentTargets) onlyOn MAC
-    publish(windowsTargets) onlyOn WINDOWS
+        }
+    }
 
     sourceSets {
         val coroutinesVersion = "1.3.2"
@@ -126,8 +129,30 @@ fun KotlinDependencyHandler.kotlinx(module: String, version: String? = null) =
 fun KotlinDependencyHandler.coroutines(module: String, version: String? = null) =
     kotlinx("coroutines-$module", version)
 
+
+
+
 @Suppress("unused")
-fun KotlinMultiplatformExtension.publish(targets: Iterable<KotlinTarget>) = targets
+fun KotlinMultiplatformExtension.publish(vararg targets: Iterable<KotlinTarget>) =
+    targets.toList().flatten()
+
+@Suppress("unused")
+fun KotlinMultiplatformExtension.publish(vararg metadata: KotlinCommonCompilation) =
+    metadata.toList()
+
+infix fun Iterable<KotlinCommonCompilation>.onlyOn(os: OS) = configure(this) {
+    mavenPublication {
+        tasks.withType<AbstractPublishToMaven>().all {
+            onlyIf {
+                publication != this@mavenPublication || when (os) {
+                    LINUX -> OperatingSystem.current().isLinux
+                    MAC -> OperatingSystem.current().isMacOsX
+                    WINDOWS -> OperatingSystem.current().isWindows
+                }
+            }
+        }
+    }
+}
 
 infix fun Iterable<KotlinTarget>.onlyOn(os: OS) = configure(this) {
     mavenPublication {
@@ -146,6 +171,9 @@ infix fun Iterable<KotlinTarget>.onlyOn(os: OS) = configure(this) {
 enum class OS {
     LINUX, MAC, WINDOWS
 }
+
+val KotlinMultiplatformExtension.metadataPublication
+    get() = targets.filterIsInstance<KotlinCommonCompilation>()
 
 val KotlinMultiplatformExtension.nativeTargets
     get() = targets.filterIsInstance<KotlinNativeTarget>()
