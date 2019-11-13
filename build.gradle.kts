@@ -126,6 +126,11 @@ bintray {
         setPublications("windows-x64")
 }
 
+extensions.findByName("buildScan")?.withGroovyBuilder {
+    setProperty("termsOfServiceUrl", "https://gradle.com/terms-of-service")
+    setProperty("termsOfServiceAgree", "yes")
+}
+
 fun searchPropertyOrNull(propertyName: String): String? =
     project.findProperty(propertyName) as String? ?: System.getenv(propertyName)
 
