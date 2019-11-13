@@ -113,10 +113,10 @@ bintray {
             name = project.version.toString()
         }
         repo = "com.github.lamba92"
-        name = "krwp-solver"
+        name = "kotlin-multiplatform-coroutines-runtest"
         setLicenses("Apache-2.0")
-        vcsUrl = "https://github.com/lamba92/krwp-solver"
-        issueTrackerUrl = "https://github.com/lamba92/krwp-solver/issues"
+        vcsUrl = "https://github.com/lamba92/kotlin-multiplatform-coroutines-runtest"
+        issueTrackerUrl = "https://github.com/lamba92/kotlin-multiplatform-coroutines-runtest/issues"
     }
     publish = true
 
