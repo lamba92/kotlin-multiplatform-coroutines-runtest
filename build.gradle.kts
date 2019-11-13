@@ -1,24 +1,21 @@
+import com.jfrog.bintray.gradle.BintrayExtension
 import org.gradle.internal.os.OperatingSystem
-import Build_gradle.OS.*
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinCommonCompilation
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
-import org.jetbrains.kotlin.konan.target.KonanTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform") version "1.3.50"
     `maven-publish`
+    id("com.jfrog.bintray") version "1.8.4"
 }
+
 repositories {
     maven("https://dl.bintray.com/kotlin/kotlin-eap")
     mavenCentral()
     jcenter()
 }
+
 group = "com.github.lamba92"
-version = "0.0.6-alpha"
+version = System.getenv("TRAVIS_TAG") ?: "0.0.1"
 
 kotlin {
 
@@ -30,13 +27,14 @@ kotlin {
         }
     }
     js()
-    mingwX64()
-    iosArm32()
-    iosArm64()
-    macosX64()
-    linuxX64()
+    mingwX64("windows-x64")
+    iosArm32("ios-arm32")
+    iosArm64("ios-arm64")
+    macosX64("macos-x64")
+    linuxX64("linux-x64")
 
     sourceSets {
+
         val coroutinesVersion = "1.3.2"
 
         val commonMain by getting {
@@ -64,35 +62,35 @@ kotlin {
             }
         }
 
-        val mingwX64Main by getting {
+        val `windows-x64Main` by getting {
             dependsOn(jvmAndNativeCommon)
             dependencies {
                 implementation(coroutines("core-windowsx64", coroutinesVersion))
             }
         }
 
-        val iosArm32Main by getting {
+        val `ios-arm32Main` by getting {
             dependsOn(jvmAndNativeCommon)
             dependencies {
                 implementation(coroutines("core-iosarm32", coroutinesVersion))
             }
         }
 
-        val macosX64Main by getting {
+        val `macos-x64Main` by getting {
             dependsOn(jvmAndNativeCommon)
             dependencies {
                 implementation(coroutines("core-macosx64", coroutinesVersion))
             }
         }
 
-        val iosArm64Main by getting {
+        val `ios-arm64Main` by getting {
             dependsOn(jvmAndNativeCommon)
             dependencies {
                 implementation(coroutines("core-iosarm64", coroutinesVersion))
             }
         }
 
-        val linuxX64Main by getting {
+        val `linux-x64Main` by getting {
             dependsOn(jvmAndNativeCommon)
             dependencies {
                 implementation(coroutines("core-linuxx64", coroutinesVersion))
@@ -102,19 +100,41 @@ kotlin {
     }
 }
 
-fun property(propertyName: String): String? =
+publishing {
+    (publications["kotlinMultiplatform"] as MavenPublication).artifactId =
+        "${rootProject.name}-${project.name}-common"
+}
+
+bintray {
+    user = searchPropertyOrNull("bintrayUsername")
+    key = searchPropertyOrNull("bintrayApiKey")
+    pkg {
+        version {
+            name = project.version.toString()
+        }
+        repo = "com.github.lamba92"
+        name = "krwp-solver"
+        setLicenses("Apache-2.0")
+        vcsUrl = "https://github.com/lamba92/krwp-solver"
+        issueTrackerUrl = "https://github.com/lamba92/krwp-solver/issues"
+    }
+    publish = true
+
+    if (OperatingSystem.current().isMacOsX)
+        setPublications("jvm", "js", "macos-x64", "ios-arm64", "ios-arm32", "linux-x64")
+    else
+        setPublications("windows-x64")
+}
+
+fun searchPropertyOrNull(propertyName: String): String? =
     project.findProperty(propertyName) as String? ?: System.getenv(propertyName)
 
-publishing {
-    repositories {
-        maven("https://maven.pkg.github.com/${property("githubAccount")}/${rootProject.name}") {
-            name = "GitHubPackages"
-            credentials {
-                username = property("githubAccount")
-                password = property("githubToken")
-            }
-        }
-    }
+fun BintrayExtension.pkg(action: BintrayExtension.PackageConfig.() -> Unit) {
+    pkg(closureOf(action))
+}
+
+fun BintrayExtension.PackageConfig.version(action: BintrayExtension.VersionConfig.() -> Unit) {
+    version(closureOf(action))
 }
 
 @Suppress("unused")
@@ -124,77 +144,3 @@ fun KotlinDependencyHandler.kotlinx(module: String, version: String? = null) =
 @Suppress("unused")
 fun KotlinDependencyHandler.coroutines(module: String, version: String? = null) =
     kotlinx("coroutines-$module", version)
-
-
-
-
-@Suppress("unused")
-fun KotlinMultiplatformExtension.publish(vararg targets: Iterable<KotlinTarget>) =
-    targets.toList().flatten()
-
-@Suppress("unused")
-fun KotlinMultiplatformExtension.publish(vararg metadata: KotlinCommonCompilation) =
-    metadata.toList()
-
-infix fun Iterable<KotlinTarget>.onlyOn(os: OS) = configure(this) {
-    mavenPublication {
-        tasks.withType<AbstractPublishToMaven>().all {
-            onlyIf {
-                publication != this@mavenPublication || when (os) {
-                    LINUX -> OperatingSystem.current().isLinux
-                    MAC -> OperatingSystem.current().isMacOsX
-                    WINDOWS -> OperatingSystem.current().isWindows
-                }
-            }
-        }
-    }
-}
-
-enum class OS {
-    LINUX, MAC, WINDOWS
-}
-
-val KotlinMultiplatformExtension.metadataPublication
-    get() = targets.filterIsInstance<KotlinCommonCompilation>()
-
-val KotlinMultiplatformExtension.nativeTargets
-    get() = targets.filterIsInstance<KotlinNativeTarget>()
-
-val KotlinMultiplatformExtension.platformIndependentTargets
-    get() = targets.filter { it !is KotlinNativeTarget || it.konanTarget == KonanTarget.WASM32 }
-
-val KotlinMultiplatformExtension.appleTargets
-    get() = targets.filter {
-        it is KotlinNativeTarget && listOf(
-            KonanTarget.IOS_ARM64,
-            KonanTarget.IOS_X64,
-            KonanTarget.MACOS_X64,
-            KonanTarget.IOS_ARM32
-        ).any { target -> it.konanTarget == target }
-    }
-
-val KotlinMultiplatformExtension.windowsTargets
-    get() = targets.filter {
-        it is KotlinNativeTarget && listOf(
-            KonanTarget.MINGW_X64,
-            KonanTarget.MINGW_X86
-        ).any { target -> it.konanTarget == target }
-    }
-
-val KotlinMultiplatformExtension.linuxTargets
-    get() = targets.filter {
-        it is KotlinNativeTarget && listOf(
-            KonanTarget.LINUX_ARM32_HFP,
-            KonanTarget.LINUX_MIPS32,
-            KonanTarget.LINUX_MIPSEL32,
-            KonanTarget.LINUX_X64
-        ).any { target -> it.konanTarget == target }
-    }
-
-val KotlinMultiplatformExtension.androidTargets
-    get() = targets.filter {
-        it is KotlinNativeTarget && listOf(
-            KonanTarget.ANDROID_ARM32,
-            KonanTarget.ANDROID_ARM64
-        ).any { target -> it.konanTarget == target }
-    }
