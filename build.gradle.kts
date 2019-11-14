@@ -100,11 +100,6 @@ kotlin {
     }
 }
 
-publishing {
-    (publications["kotlinMultiplatform"] as MavenPublication).artifactId =
-        "${rootProject.name}-${project.name}-common"
-}
-
 bintray {
     user = searchPropertyOrNull("bintrayUsername")
     key = searchPropertyOrNull("bintrayApiKey")
@@ -119,10 +114,9 @@ bintray {
         issueTrackerUrl = "https://github.com/lamba92/kotlin-multiplatform-coroutines-runtest/issues"
     }
     publish = true
-
     if (OperatingSystem.current().isMacOsX)
-        setPublications("jvm", "js", "macos-x64", "ios-arm64", "ios-arm32", "linux-x64")
-    else
+        setPublications("jvm", "js", "macos-x64", "ios-arm64", "ios-arm32", "linux-x64", "kotlinMultiplatform")
+    else (OperatingSystem.current().isWindows)
         setPublications("windows-x64")
 }
 
